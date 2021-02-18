@@ -1,0 +1,277 @@
+                              ____________
+
+                               P4 WRITEUP
+                              ____________
+
+
+- Name: Haode Meng
+- NetID: meng0188
+
+Answer the questions below according to the project specification. Write
+your answers directly in this text file and submit it along with your
+code.
+
+
+PROBLEM 1: matsquare_OPTM()
+===========================
+
+  Do your timing study on csel-keller1250-NN.cselabs.umn.edu
+
+
+(A) Paste Source Code
+~~~~~~~~~~~~~~~~~~~~~
+
+  Paste a copy of your source code for the function `matsquare_OPTM()'
+
+int matsquare_VER1(matrix_t mat, matrix_t matsq) {
+  int a, b;  // initialize a and b in the loop before unrolling
+  for(int i = 0; i < mat.rows; i++)
+  {
+    int l = i * mat.cols;        // l = i*mat.cols (replace the second element in )
+    // loop unrolling 
+    // set the value of first element in every column for one row
+    for(a = 0; a < mat.cols; a += 3) {      
+      matsq.data[l + a] = mat.data[a] * mat.data[l];                   // MSET(mstsq, i, a, MGET(mat, 0, a) * MGET(mat, i, 0))
+      matsq.data[l + a + 1] = mat.data[a + 1] * mat.data[l];           // MSET(mstsq, i, a + 1, MGET(mat, 0, a + 1) * MGET(mat, i, 0))
+      matsq.data[l + a + 2] = mat.data[a + 2] * mat.data[l];           // MSET(mstsq, i, a + 2, MGET(mat, 0, a + 2) * MGET(mat, i, 0))
+    }
+    for(; a < mat.cols; a++) {   // finish any remaining columns 
+      matsq.data[l + a] = mat.data[l + a] * mat.data[a];               // MSET(mstsq, i, a, MGET(mat, 0, a) * MGET(mat, i, 0))
+    }
+
+    for(int j = 1; j < mat.cols; j++)
+    { 
+      int m = j * mat.cols;      // m = j*mat.cols (easier for the codes below)
+      // loop unrolling 
+      // set the value of the rest element in every column for one row
+    for(b = 0; b < mat.cols; b += 3) {
+      matsq.data[l + b] += mat.data[l + j] * mat.data[m + b];           // MSET(mstsq, i, b, MGET(mat, i, j) * MGET(mat, j, b))
+      matsq.data[l + b + 1] += mat.data[l + j] * mat.data[m + b + 1];   // MSET(mstsq, i, b + 1, MGET(mat, i, j) * MGET(mat, j, b + 1))
+      matsq.data[l + b + 2] += mat.data[l + j] * mat.data[m + b + 2];   // MSET(mstsq, i, b + 2, MGET(mat, i, j) * MGET(mat, j, b + 2))
+    }
+    for(; b < mat.cols; b++) {   // finish any remaining columns 
+      matsq.data[l + b] += mat.data[l + j] * mat.data[m + b];           // MSET(mstsq, i, b, MGET(mat, i, j) * MGET(mat, j, b))
+    }
+    }
+  }
+  return 0;  // return
+}
+
+
+(B) Timing on csel-kh1250-NN
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Paste a copy of the results of running `matsquare_benchmark' on
+  csel-kh1250-NN.cselabs.umn.edu in the space below which shows how your
+  performance optimizations improved on the baseline codes.
+
+meng0188@csel-kh1250-28:~/p4-code$ ./matsquare_benchmark
+==== Matrix Square Benchmark Version 1 ====
+  SIZE       BASE       OPTM  SPDUP   LOG2 FACTOR POINTS
+   273 4.0245e-02 1.5751e-02   2.56   1.35   1.00   1.35
+   512 2.5759e-01 1.0888e-01   2.37   1.24   1.88   2.33
+   722 6.2888e-01 2.9176e-01   2.16   1.11   2.64   2.93
+   801 8.8924e-01 3.9149e-01   2.27   1.18   2.93   3.47
+  1024 3.4888e+00 8.2590e-01   4.22   2.08   3.75   7.80
+  1101 5.4228e+00 1.0310e+00   5.26   2.40   4.03   9.66
+  1309 1.4105e+01 1.7376e+00   8.12   3.02   4.79  14.49
+RAW POINTS: 42.03
+TOTAL POINTS: 35 / 35
+
+
+
+##################################################################
+
+
+
+(C) Optimizations
+~~~~~~~~~~~~~~~~~
+
+  Describe in some detail the optimizations you used to speed the code
+  up.  THE CODE SHOULD CONTAIN SOME COMMENTS already to describe these
+  but in the section below, describe in English the techniques you used
+  to make the code run faster.  Format your descriptions into discrete
+  chunks such as.
+        Optimization 1: Blah bla blah... This should make run
+        faster because yakkety yakeety yak.
+
+        Optimization 2: Blah bla blah... This should make run
+        faster because yakkety yakeety yak.
+
+        ...  Optimization N: Blah bla blah... This should make run
+        faster because yakkety yakeety yak.
+  Full credit solutions will have a least two optimizations and describe
+  WHY these improved performance in at least a couple sentences.
+
+
+Optimization 1: Reorder the memory access to be sequential. Calculate one element for every column of one row, and the move to the next element. This should make run faster because c programming uses row-major order.
+
+Optimization 2: Sets the value of the first element to M[0][a] * M[i][0] instead of 0 for all columns in one row. It should save the time setting all the elements 0 and then add the first element.
+
+Optimization 3: Uses loop unrolling to do 3 columns in a loop. This should save the time each time the loop condition is judged.
+
+  ##################################################################
+
+
+PROBLEM 2: Timing Search Algorithms
+===================================
+
+  Do your timing study on csel-kh1250-NN.cselabs.umn.edu. In most cases,
+  report times larger than 1e-03 seconds as times shorter than this are
+  unreliable. Run searches for more repetitions to lengthen run times.
+
+
+(A) Min Size for Algorithmic Differences
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Determine the size of input array does one start to see a measurable
+  difference in the performance of the linear and logarithmic
+  algorithms.  Produce a timing table which includes all algorithms
+  which clearly demonstrates an uptick in the times associated with some
+  while others remain much lower.  Identify what size this appears to be
+  a occur.
+
+meng0188@csel-kh1250-28:~/p4-code$ ./search_benchmark 14 16 1
+ LENGTH SEARCHES      array       list     binary       tree
+  16384    32768 1.5358e-01 3.5954e+00 1.5520e-03 1.6110e-03
+  32768    65536 6.2853e-01 1.7148e+01 2.8480e-03 2.8010e-03
+  65536   131072 2.4827e+00 4.4926e+01 6.2430e-03 6.3540e-03
+
+When the min size is larger than 14, tree and linked list algorithm are faster while linear array and binary search are comparatively slower. 
+
+##################################################################
+
+
+(B) Linear Search in List vs Array
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Determine whether the linear array and linked list search remain
+  approximately at the same performance level as size increases to large
+  data or whether one begins to become favorable over other. Determine
+  the approximate size at which this divergence becomes obvious. Discuss
+  reasons WHY this difference arises.
+
+meng0188@csel-kh1250-28:~/p4-code$ ./search_benchmark 9 14 15 al
+ LENGTH SEARCHES      array       list
+    512    15360 6.4600e-03 1.3680e-03
+   1024    30720 1.2389e-02 9.5000e-04
+   2048    61440 3.7076e-02 2.1530e-03
+   4096   122880 1.4595e-01 4.5600e-03
+   8192   245760 5.7973e-01 9.5560e-03
+  16384   491520 2.3725e+00 2.1175e-02
+When the size is smaller than 9, the linear array and linked list remain approximately at the same performance level, after 9 linked list search becames considerably faster.
+  ##################################################################
+
+
+(C) Binary Search in Tree vs Array
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Compare the binary array search and binary tree search on small to
+  very large arrays. Determine if there is a size at which the
+  performance of these two begins to diverge. If so, describe why this
+  might be happening based on your understanding of the data structures
+  and the memory system. If not, describe why you believe there is
+  little performance difference between the two.
+
+meng0188@csel-kh1250-28:~/p4-code$ ./search_benchmark 9 14 15 bt
+ LENGTH SEARCHES     binary       tree
+    512    15360 6.9340e-03 6.0100e-04
+   1024    30720 2.7289e-02 1.0180e-03
+   2048    61440 3.3085e-01 2.2420e-03
+   4096   122880 1.6965e+00 4.3770e-03
+   8192   245760 7.6730e+00 9.1000e-03
+  16384   491520 5.4299e+01 1.9921e-02
+When the size is smaller than 9, binary array search and binary tree search remain approximately at the same performance level, after 9 binary tree search becames considerably faster.
+  ##################################################################
+
+
+(D) Caching Effects on Algorithms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  It is commonly believed that memory systems that feature a Cache will
+  lead to arrays performing faster than linked structures such as Linked
+  Lists and Binary Search Trees. Describe whether your timings confirm
+  or refute this belief.  Address both types of algorithms in your
+  answer:
+  - What effects does Cache have on Linear Search in arrays and lists
+    and why?
+  - What effects does Cache have on Binary Search in arrays and trees
+    and why?
+
+Linear search in array and lists perform better in searches with smaller sizes, and binary search in array and trees perform better in searches with larger sizes. Linear searches algorithms sequentially check the elements, so it's not as efficient as binary searches algorithms, which find the elements in a sorted way. 
+  ##################################################################
+
+
+(E) OPTIONAL MAKEUP CREDIT
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  If you decided to make use of a table of function pointers/structs
+  which is worth makeup credit, describe your basic design for this
+  below.
+
+fail();
+usage: ./search_benchmark <minpow> <maxpow> <repeats> [which]
+ which is a combination of:
+  a : Linear Array Search
+  l : Linked List Search
+  b : Binary Array Search
+  t : Binary Tree Search
+  (default all)
+
+main(argc, minpow, maxpow. repeats, algs_string);
+// argc:	        	the number of arguments
+// minpow:       	minimum data size (power of 2)
+// maxpow:       	maximum data size (power of 2)
+// repeats:	        	number of repeats
+// algs_string:    	the string that determines the algorithm
+
+if(argc < 4 || argc > 5 || argv[1,2,3] are not integers) {
+  // fail() and return 0
+}
+
+if(minpow <= 0 || maxpow < minpow || repeats <= 0) {
+  // fail() and return 0
+}
+
+if(algs_string == NULL) {
+  run_linear_array = 1;
+  run_binary_search = 1;
+  run_linked_list_search = 1;
+  run_tree_search = 1;
+}
+
+// cur_length:	2 ^ minpow
+// cur_search_size:	cur_length * 2 * repeats
+
+ LENGTH                  	SEARCHES                           ('a' in algs_string or default)array      ('l' in algs_string or default)list            ('b' in algs_string or default)binary      ('t' in algs_string or default)tree
+ cur_length      	cur_search_size     	           time runing linear array search         time runing linear linked list search    time runing binary array search          time runing binary tree search
+ cur_length * 2	cur_search_size * 2               ...... //
+ ...... //
+ ...... //
+ 2 ^ maxpow	2 ^ maxpow * 2 * repeats    ...... //
+
+// time runing the searches can be calculated by the structure below:
+begin, end: clock_t variables
+begin = clock();
+search variables: {	make_even_array(cur_length);
+		make_even_list(cur_length);
+		make_even_array(cur_length);
+		make_even_tree(cur_length);
+for(int j = 0; j < repeats; j++) {                
+        for(int k = 0; k < cur_length * 2; k++) {     
+          {	linear_array_search(linear_array, cur_length, k);
+          {	linkedlist_search(linked_list_search, cur_length, k);
+          {	binary_array_search(binary_search, cur_length, k);
+          {	binary_tree_search(tree_search, cur_length, k);
+        }
+      }
+end = clock(); 
+tree_search_time = (end - begin) / 1000000;
+free(linear_array);  or  list_free(linked_list_search);  or  bst_free(tree_search);
+
+cur_length * 2;
+cur_search_size * 2;
+
+return 0;
+
+  ##################################################################
